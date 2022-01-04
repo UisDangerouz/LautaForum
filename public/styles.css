@@ -1,0 +1,139 @@
+* {
+    font-family: 'Times' !important;
+}
+
+body {
+    background-color: white;
+    margin: 0px;
+}
+
+html {
+    padding-bottom: 120px !important;
+}
+
+#latestPostsDiv, #topPostsDiv {
+    float: left;
+    padding: 0% 1% 1% 1%;
+}
+
+#latestPostsDiv {
+    margin-right: 1%;
+}
+
+#topPostsDiv {
+    margin-left: 1%;
+}
+
+#postDiv, #createPostsDiv {
+    padding: 1% 1% 0% 1%;
+    font-size: 16px;
+    margin: 0% 2% 1% 2%;
+    float: left;
+    width: 94%;
+}
+
+#createPostsDiv {
+    padding-bottom: 1% !important;
+}
+
+#lautaTitle {
+    color: black;
+    font-size: 40px;
+    font-family: Times;
+    font-weight: bold;
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 20px;
+    margin: 2% 2% 0px 2%
+}
+
+#backToHomePageLink {
+    color: black;
+}
+
+#homePageContainerLink {
+    margin: 1% 0% 1% 2%;
+}
+
+#addImageButton {
+    width: 125px !important;
+}
+
+#imageInput {
+    display: none;
+}
+
+#imageInputDIv {
+    margin-top: 1%;
+}
+
+a {
+    color: blue
+}
+
+footer {
+    position: fixed;
+    bottom: 0px;
+    width: 96%;
+    margin: 0px;
+    padding: 2%;
+}
+
+.textInput {
+    width: 98%;
+    font-size: 16px;
+    border: 2px solid black;
+    margin-bottom: 1%;
+    padding: 1%;
+    resize: none;
+}
+
+.textInput::placeholder {
+    color: gray;
+}
+
+.button {
+    -webkit-appearance: none !important;
+    padding: 10px 20px 10px 20px !important;
+    font-size: 16px;
+    background-color: white;
+    border: 2px solid black;
+    margin-left: 0px;
+}
+
+.button:active {
+    color: black;
+    font-size: 16px;
+    transform: translateY(4px);
+}
+
+.button:hover {
+    background-color: #d4d4d4;
+}
+
+.beige-bg {
+    background-color: #FED8B4;
+}
+
+.divRow {
+    display: flex;
+    margin: 2%;
+}
+
+.divCol {
+    flex: 1;
+    padding: 1%;
+}
+
+.post-highlight {
+    border: 4px solid red;
+}
+
+.date-color {
+    color: #525252;
+}
+
+.deleteButton {
+    padding: 5px !important;
+    float: right;
+}

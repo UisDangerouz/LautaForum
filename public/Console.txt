@@ -1,0 +1,4 @@
+[Log] Array (1) (post.js, line 12)
+0 {_id: "61d1d2aad8d5a617d87b857e", postId: 3, postDate: "2022-01-02T16:28:26.054Z", responseId: null, postTitle: "test", …}
+
+Array Prototype

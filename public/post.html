@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+    <link rel="stylesheet" href="/styles.css">
+
+	<title>AaltoLauta</title>
+
+</head>
+
+<body>
+
+    <div><a id="lautaTitle" href="/">AaltoLauta</a></div>
+
+    <div id="homePageContainerLink"><a id="backToHomePageLink" href="/">Takaisin etusivulle</a></div>
+
+    <div id="postsContainerDiv">
+
+    </div>
+
+    
+
+    <div id="createPostsDiv" class="beige-bg">
+        <b>Vastaus viestiin: </b><a href="" id="replyToMessageText"></a>
+        
+        <div id="imageInputDIv">
+            <canvas id="imagePreview" hidden width="400" height="200"></canvas>
+            <label>
+                <input type="file" accept="image/*" id="imageInput"/>
+                <div class="button" id="addImageButton">Lisää kuva viestiin</div>
+            </label>
+            <button class="button" id="removeImageButton" hidden>Poista kuva</button>
+        </div>
+        
+        <br><textarea id="postTextInput" rows="5" class="beige-bg textInput" placeholder="Viesti"></textarea>
+        <br><button id="createPostButton" type="button" class="button">Lähetä viesti</button>
+    </div>
+    
+    <footer class="beige-bg">
+        Copyright blah blah
+        <div style="float: right;">
+            moderaattori?
+            <input type="text" id="moderatorTextInput">
+            <button id="sendModsButton">Lähetä</button>
+        </div>
+    </footer>
+
+	<!-- Scripts -->
+    <script src="/jquery.min.js"></script>
+    <script src="/util.js"></script>
+	<script src="/post.js"></script>
+        
+</body>
+
+</html>
