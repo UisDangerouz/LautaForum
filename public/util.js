@@ -1,10 +1,10 @@
 let canvas = document.getElementById('imagePreview')
 let ctx = canvas.getContext("2d")
 
-function makeDeleteButtonHTML(hasMods, postId) {
-    if (!hasMods) return ''
+function makeDeleteButtonHTML(showDeleteButton, postId) {
+    if (!showDeleteButton) return ''
 
-    return `<button onclick="deletePost(${postId});" class="deleteButton button">Poista</button>`
+    return `<button id="deleteButton${postId}" onclick="deletePost(${postId});" class="deleteButton button">Poista</button>`
 }
 
 function makePostLinkHTML(postId) {
@@ -118,6 +118,11 @@ function hideImagePreview() {
     $('#imageInput').val('')
 }
 
+function postAlreadyDeleted(post) {
+    return (post.postTitle === 'Viesti poistettu' && post.postContent === '' && post.postImage === null) || 
+        (post.postTitle === '' && post.postContent === 'Viesti poistettu' && post.postImage === null) 
+}
+
 function setCookie(cname, cvalue, exdays) {
     const d = new Date();
     d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
@@ -140,15 +145,18 @@ function getCookie(cname) {
     return "";
 }
 
+function goToPost(postId) {
+    window.location.href = window.location.origin + '/post/' + postId.toString()
+}
+
 $('#sendModsButton').click(() => {
     let modsText = $('#moderatorTextInput').val()
     $.post('/mods', {text: modsText}, (result) => {
         if (result) {
-            $('#moderatorTextInput').val('')
             setCookie('mods', modsText, 1)
-            alert('Hyväksytty.')
         } else {
             setCookie('mods', '', 1)
         }
+        location.reload();
     })
 });

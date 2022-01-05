@@ -5,61 +5,55 @@ function makeDetailedPostHtml(post) {
     }
 
     let modsCookie = getCookie('mods')
-    let mods = (modsCookie && modsCookie.length > 0);
+    let showDeleteButton = (modsCookie && modsCookie.length > 0 && !postAlreadyDeleted(post));
 
     if (post.responseId) {
         
-        return `<div id="postDiv" class="beige-bg ${highLightedPost}">
+        return `<div id="${post.postId}" class="postDiv beige-bg ${highLightedPost}">
                     ${makePostLinkHTML(post.postId)}
                     <span class="date-color">${formatDate(post.postDate)}</span>
-                    ${makeDeleteButtonHTML(mods, post.postId)}
+                    ${makeDeleteButtonHTML(showDeleteButton, post.postId)}
                     <br>
                     <b> Vastaus viestiin: </b>
                     ${makePostLinkHTML(post.responseId)}
                     ${makeImgHTML(post.postImage)}
-                    <pre>${renderPostText(post.postContent)}</pre>
+                    <br><div>${renderPostText(post.postContent)}</div>
                 </div>`
     } else {
-        return `<div id="postDiv" class="beige-bg ${highLightedPost}">
+        return `<div id="${post.postId}" class="postDiv beige-bg ${highLightedPost}">
                     ${makePostLinkHTML(post.postId)}
                     <span class="date-color">${formatDate(post.postDate)}</span>
-                    ${makeDeleteButtonHTML(mods, post.postId)}
+                    ${makeDeleteButtonHTML(showDeleteButton, post.postId)}
                     <br>
                     <b> ${post.postTitle}</b>
                     ${makeImgHTML(post.postImage)}
-                    <pre>${renderPostText(post.postContent)}</pre>
+                    <br><div>${renderPostText(post.postContent)}</div>
                 </div>`
     }
 }
 
-function makeErrorPostHtml(error) {
-    return `<div id="postDiv" class="beige-bg">
-                ${error}
-            </div>`
-}
-
 let fullUrl = window.location.href
 let path = fullUrl.split('/')
-let urlId = path[path.length - 1]
+let urlId = path[path.length - 1].split('#')[0]
 let mainPostId = path[path.length - 1]
 
 function getPostInfo() {
     $('#postsContainerDiv').html('')
     $.get('/postInfo/' + mainPostId, posts => {
-        console.log(posts)
-        if (typeof posts === 'string') {
-            $('#postsContainerDiv').append(makeErrorPostHtml(posts))
-            $('#createPostsDiv').hide()
+        if (posts.err) {
+            alert(posts.err)
         } else {
-            mainPostId = posts[0].postId 
+            mainPostId = posts.data[0].postId 
             $('#replyToMessageText').html('#' + mainPostId)
             $('#replyToMessageText').attr('href', window.location.href)
             
-            posts.forEach(post => {
+            posts.data.forEach(post => {
                 $('#postsContainerDiv').append(makeDetailedPostHtml(post))
             });
+
+            location.href = '#';
+            location.href = '#' + urlId.toString();
         }
-        $('#postsContainerDiv').show()
     });
 }
 
@@ -75,13 +69,11 @@ $('#createPostButton').click(() => {
         postContent: $('#postTextInput').val(),
         postImage: postImageData
     }
-    $.post('/createPost', post, (err) => {
-        if (err) {
-            alert(err)
+    $.post('/createReply', post, payload => {
+        if (payload.err) {
+            alert(payload.err)
         } else {
-            $('#postTextInput').val('')
-            hideImagePreview();
-            getPostInfo();
+            goToPost(payload.data)
         }
         
     }); 
@@ -89,8 +81,12 @@ $('#createPostButton').click(() => {
 
 function deletePost(postId) {
     $.post('/deletePost', {text: getCookie('mods'), id: postId}, success => {
-        if (!success) setCookie('mods', '', 1)
-        getPostInfo();
+        if (success) {
+            $('#deleteButton' + postId.toString()).remove()
+        } else {
+            setCookie('mods', '', 1);
+            getPostInfo();
+        }
     });
 }
 
@@ -99,11 +95,5 @@ $('#removeImageButton').click(hideImagePreview)
 
 getPostInfo();
 
-/*
-    postId: Number,
-    postDate: Date,
-    responseId: Number,
-    postTitle: String,
-    postContent: String,
-*/
+
 

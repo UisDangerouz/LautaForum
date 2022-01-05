@@ -3,45 +3,48 @@
 
 <head>
 
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="stylesheet" href="/styles.css">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
 
-	<title>AaltoLauta</title>
+    <title>AaltoLauta</title>
 
 </head>
 
 <body>
 
-	<div><a id="lautaTitle" href="/">AaltoLauta</a></div>
+    <div><a id="lautaTitle" href="/">AaltoLauta</a></div>
+
+    <p id="recentMessagesCountText"></p>
 
     <div class="divRow">
-        <div id="latestPostsDiv" class="beige-bg divCol">
-        
-            <h2>Viimeisimmät viestit:</h2>
-    
-        </div>
-    
         <div id="topPostsDiv" class="beige-bg divCol">
-            
+
             <h2>Suosituimmat viestit:</h2>
-    
+
+        </div>
+
+        <div id="latestPostsDiv" class="beige-bg divCol">
+
+            <h2>Viimeisimmät viestit:</h2>
+
         </div>
     </div>
 
     <div id="createPostsDiv" class="beige-bg">
-        <input id="postTitleInput" class="beige-bg textInput" placeholder="Viestin otsikko">
+        <input maxlength="50" id="postTitleInput" class="beige-bg textInput" placeholder="Viestin otsikko">
 
         <!-- Image input-->
         <canvas id="imagePreview" hidden width="400" height="200"></canvas>
         <label>
-            <input type="file" accept="image/*" id="imageInput"/>
+            <input type="file" accept="image/*" id="imageInput" />
             <div class="button" id="addImageButton">Lisää kuva viestiin</div>
         </label>
         <button class="button" id="removeImageButton" hidden>Poista kuva</button>
 
-        <br><textarea id="postTextInput" rows="5" class="beige-bg textInput" placeholder="Viesti"></textarea>
+        <br><textarea maxlength="500" id="postTextInput" rows="5" class="beige-bg textInput"
+            placeholder="Viesti"></textarea>
 
         <br><button id="createPostButton" type="button" class="button">Lähetä viesti</button>
     </div>
@@ -54,15 +57,16 @@
             <button id="sendModsButton">Lähetä</button>
         </div>
     </footer>
-    
-	<!-- Scripts -->
+
+
+    <!-- Scripts -->
     <script src="/jquery.min.js"></script>
     <script src="/util.js"></script>
-	<script src="/index.js"></script>
-        
+    <script src="/index.js"></script>
+
 </body>
 
-    
+
 
 
 </html>

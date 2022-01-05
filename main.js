@@ -4,19 +4,23 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 80;
 const dbAddress = ''
 
 app.use(express.static('public'))
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+app.set('trust proxy', true)
 
 app.listen(port, () => {
-  	console.log(`App listening at http://localhost:${port}`)
+  	console.log(`App listening at port ${port}`)
 });
 
 const postModel = mongoose.model("Post", mongoose.Schema({
-    postId: Number,
+    postId: {
+        type: Number,
+        required: true
+    },
     postDate: Date,
     responseId: Number,
     postTitle: String,
@@ -28,6 +32,18 @@ const postModel = mongoose.model("Post", mongoose.Schema({
 let nextPostId;
 let adminPassword;
 
+let homepagePostsCache = {
+    data: null,
+    lastRefresh: null,
+    refreshTimeout: 10000 
+}
+
+const limits = {
+    title: 50,
+    content: 500, 
+    image: 100000
+}
+
 app.get('/post/:id', (req, res) => {
 	res.sendFile('public/post.html', {root: __dirname })
 });
@@ -36,13 +52,13 @@ app.get('/postInfo/:id', (req, res) => {
     let postId = req.params.id
 
     if (isNaN(postId) || parseFloat(postId) >= nextPostId) {
-        res.send('Viestiä ei löytynyt.')
+        res.send(makePayload(null,'Viestiä ei löytynyt.'))
         return;
     }
 
     postModel.findOne({postId: postId}, (err, thisPost) => {
         if (err || !thisPost) {
-            res.send('Viestiä ei löytynyt.')
+            res.send(makePayload(null, 'Viestiä ei löytynyt.'))
             return;
         } 
 
@@ -50,16 +66,16 @@ app.get('/postInfo/:id', (req, res) => {
             // Post is not main post; get main post then replies
             postModel.findOne({postId: thisPost.responseId}, (err, mainPost) => {
                 if (err) {
-                    res.send('Viestiä ei pystytty lataamaan.');
+                    res.send(makePayload(null, 'Viestiä ei pystytty lataamaan.'));
                     return;
                 }
                 postModel.find({responseId: mainPost.postId}, (err, postReplies) => {
                     if (err) {
-                        res.send('Viestiä ei pystytty lataamaan.')
+                        res.send(makePayload(null, 'Viestiä ei pystytty lataamaan.'))
                         return;
                     }
                     let allPosts = [mainPost].concat(postReplies)
-                    res.send(allPosts)
+                    res.send(makePayload(allPosts, null))
                 });
             })
         } else {
@@ -69,86 +85,129 @@ app.get('/postInfo/:id', (req, res) => {
                     res.send('Viestiä ei pystytty lataamaan.')
                 } else {
                     let allPosts = [thisPost].concat(postReplies)
-                    res.send(allPosts)
+                    res.send(makePayload(allPosts, null))
                 }
             });
         }
     });
 });
 
-app.get('/latestPosts', (req, res) => {
-    postModel.find({responseId: null}).sort({postDate: -1}).limit(10).exec((err, posts) => {
-        if (err || !posts) {
-            res.send('Viestejä ei löytynyt.')
-        } else {
-            res.send(posts)
-        }
-    });
-});
+app.get('/homepagePosts', (req, res) => {
+    if (homepagePostsCache.data && Date.now() - homepagePostsCache.lastRefresh <= homepagePostsCache.refreshTimeout) {
+        res.send(homepagePostsCache.data);
+        return;
+    }
 
-app.get('/popularPosts', (req, res) => {
-    postModel.find({responseId: null}).sort({postReplies: -1}).limit(10).exec((err, posts) => {
-        if (err || !posts) {
-            res.send('Viestejä ei löytynyt.')
-        } else {
-            res.send(posts)
-        }
+    let latestPostsPromise = new Promise(resolve => {
+        postModel.find({responseId: null}).sort({postDate: -1}).limit(10).exec((err, posts) => {
+            if (err || !posts) {
+                resolve(makePayload(null, 'Viestejä ei löytynyt.'))
+            } else {
+                resolve(makePayload(posts, null))
+            }
+        });
     });
+
+    let popularPostsPromise = new Promise(resolve => {
+        postModel.find({responseId: null}).sort({postReplies: -1}).limit(10).exec((err, posts) => {
+            if (err || !posts) {
+                resolve(makePayload(null, 'Viestejä ei löytynyt.'))
+            } else {
+                resolve(makePayload(posts, null))
+            }
+        });
+    });
+
+    let newMessagesCountPromise = new Promise(resolve => {
+        let dateHourAgo = new Date()
+        dateHourAgo.setTime(dateHourAgo.getTime() - 3600000)
+
+        postModel.count({'postDate' : { $gte : dateHourAgo}}, (err, count) => {
+            if (err) {
+                resolve(makePayload(null, 'Viimeisiä viestejä ei pystytty laskemaan.' + err.toString()));
+            } else {
+                resolve(makePayload(count, null));
+            }
+        });
+    });
+
+    Promise.all([latestPostsPromise, popularPostsPromise, newMessagesCountPromise]).then(values => {
+        homepagePostsCache.data = {latest: values[0], popular: values[1], newMessagesCount: values[2]}
+        homepagePostsCache.lastRefresh = Date.now();
+        res.send(homepagePostsCache.data)
+    })
 });
 
 app.post('/createPost', (req, res) => {
     let post = req.body;
 
-    if (!('responseId' in post) || !post.responseId) {
-        // New message
-        if (!('postTitle' in post) || !('postContent' in post) || !post.postTitle || !post.postContent) {
-            res.send('Otsikko ja viesti eivät voi olla tyhjiä.')
+    if (!('postTitle' in post) || !('postContent' in post) || !post.postTitle || !post.postContent) {
+        res.send(makePayload(null, 'Otsikko ja viesti eivät voi olla tyhjiä.'))
+        return;
+    }
+
+    if (post.postTitle > limits.title || post.postContent.length > limits.content) {
+        res.send(makePayload(null, 'Liian pitkä viesti.'))
+        return;
+    }
+
+    if ('postImage' in post && post.postImage > limits.image) {
+        res.send('Kuva on liian suuri.');
+        return;
+    }
+
+    const newPost = new postModel({
+        postId: nextPostId,
+        postDate: new Date(),
+        responseId: null,
+        postTitle: sanitizeString(post.postTitle),
+        postContent: sanitizeString(post.postContent),
+        postReplies: 0,
+        postImage: sanitizeString(post.postImage)
+    });
+    savePost(newPost).then(status => {res.send(status)})
+});
+
+app.post('/createReply', (req, res) => {
+    let replyPost = req.body;
+
+    if (!('postContent' in replyPost) || !replyPost.postContent || !('responseId' in replyPost) || !replyPost.responseId) {
+        res.send(makePayload(null, 'Viesti ei voi olla tyhjiä.'))
+        return;
+    } 
+
+    if (replyPost.postContent.length > limits.content) {
+        res.send(makePayload(null, 'Liian pitkä viesti.'))
+        return;
+    }
+
+    if ('postImage' in replyPost && replyPost.postImage > limits.image) {
+        res.send('Kuva on liian suuri.');
+        return;
+    }
+
+    postModel.findOne({postId: replyPost.responseId}, (err, mainPost) => {
+        if (err || !mainPost) {
+            res.send(makePayload(null, 'Yritit vastata viestiin, jota ei ole olemassa.'))
             return;
         } 
 
         const newPost = new postModel({
             postId: nextPostId,
             postDate: new Date(),
-            responseId: null,
-            postTitle: post.postTitle,
-            postContent: post.postContent,
+            responseId: mainPost.postId,
+            postTitle: null,
+            postContent: sanitizeString(replyPost.postContent),
             postReplies: 0,
-            postImage: post.postImage
-        });
-        savePost(newPost).then(err => res.send(err))
-    } else {
-        // Reply to message
-        if (!('postContent' in post) || !post.postContent) {
-            res.send('Viesti ei voi olla tyhjiä.')
-            return;
-        } 
-        let replyPost = post
-
-        postModel.findOne({postId: post.responseId}, (err, mainPost) => {
-            if (err || !post) {
-                res.send('Yritit vastata viestiin, jota ei ole olemassa.')
-                return;
-            } 
-
-            const newPost = new postModel({
-                postId: nextPostId,
-                postDate: new Date(),
-                responseId: mainPost.postId,
-                postTitle: null,
-                postContent: replyPost.postContent,
-                postReplies: 0,
-                postImage: replyPost.postImage
-            })
-            savePost(newPost).then(err => {
-                res.send(err)
-                if (err) return
-                mainPost.postReplies += 1;
-                mainPost.save()
-            })
+            postImage: sanitizeString(replyPost.postImage)
         })
-
-        
-    }
+        savePost(newPost).then(status => {
+            res.send(status)
+            if (status.err) return;
+            mainPost.postReplies += 1;
+            mainPost.save()
+        })
+    })
 });
 
 app.post('/mods', (req, res) => {
@@ -157,6 +216,8 @@ app.post('/mods', (req, res) => {
     if ((password && password === adminPassword)) {
         res.send(true)
         console.log('Moderator approved.')
+    } else {
+        res.send(false)
     }
 });
 
@@ -188,14 +249,18 @@ app.post('/deletePost', (req, res) => {
     }
 });
 
-async function savePost(post) {
-    post.save(err => {
-        if(err) {
-            return 'Viestiä ei voitu lähettää.';
-        } else {
-            nextPostId += 1;
-            return false;
-        }
+function sanitizeString(text) {
+    return text.replace(/<[^>]*>?/gm, '');
+}
+
+function makePayload(data, err) {
+    return {data: data, err: err}
+}
+
+function savePost(post) {
+    return post.save().then(post => {
+        nextPostId += 1;
+        return makePayload(post.postId, null);
     });
 }
 
@@ -232,3 +297,5 @@ mongoose.connect(dbAddress, {useNewUrlParser: true, useUnifiedTopology: true}).t
         console.log("Database error:" + err)
     }
 );
+
+// heroku logs -t -s app -a aalto-lauta 

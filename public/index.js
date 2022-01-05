@@ -7,31 +7,48 @@ function makeLatestPostHTML(post) {
 }
 
 function getLatestPosts() {
-    $('#latestPostsDiv').html('<h2>Viimeisimmät viestit:</h2>')
-    $.get('/latestPosts', posts => {
+    
+    $.get('/latestPosts', payload => {
 
-        if (typeof posts === 'string') {
-            $('#latestPostsDiv').append(posts)
+        if (payload.err) {
+            alert(err)
         } else {
-            posts.forEach(post => {
+            payload.data.forEach(post => {
                 $('#latestPostsDiv').append(makeLatestPostHTML(post))
             });
         }
     });
 }
 
-function getPopularPosts() {
+function getHomepagePosts() {
+    $('#latestPostsDiv').html('<h2>Viimeisimmät viestit:</h2>')
     $('#topPostsDiv').html('<h2>Suosituimmat viestit:</h2>')
-    $.get('/popularPosts', posts => {
 
-        if (typeof posts === 'string') {
-            $('#topPostsDiv').append(posts)
+    $.get('/homepagePosts', posts => {
+        
+        if (posts.latest.err) {
+            alert(posts.latest.err)
         } else {
-            posts.forEach(post => {
+            posts.latest.data.forEach(post => {
+                $('#latestPostsDiv').append(makeLatestPostHTML(post))
+            }); 
+        }
+
+        if (posts.popular.err) {
+            alert(posts.popular.err);
+        } else {
+            posts.popular.data.forEach(post => {
                 $('#topPostsDiv').append(makePopularPostHTML(post))
-            });
+            }); 
+        }
+
+        if (posts.newMessagesCount.err) {
+            alert(posts.newMessagesCount.err)
+        } else {
+            $('#recentMessagesCountText').html(posts.newMessagesCount.data.toString() + ' Viestiä viimeisen tunnin aikana!')
         }
     });
+
 }
 
 $('#createPostButton').click(() => {
@@ -47,27 +64,16 @@ $('#createPostButton').click(() => {
         postImage: postImageData
     }
 
-    $.post('/createPost', post, (err) => {
-        if (err) {
-            alert(err)
+    $.post('/createPost', post, payload => {
+        if (payload.err) {
+            alert(payload.err)
         } else {
-            $('#postTitleInput').val('')
-            $('#postTextInput').val('')
-            hideImagePreview();
-            getLatestPosts();
+            goToPost(payload.data)
         }
-        
     });
 });
 
 $('#imageInput').change(showImagePreview)
 $('#removeImageButton').click(hideImagePreview)
 
-getLatestPosts();
-getPopularPosts()
-/*
-const postModel = mongoose.model("Post", mongoose.Schema({
-    postId: Number,
-    postDate: Date,
-    responseId: Number,
-    postContent: String,*/
+getHomepagePosts();
